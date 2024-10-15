@@ -125,102 +125,182 @@ int Board:: getRow() {
 //   //for now, do interface or I/O with user using c>> to get int
 // }
 
-bool Board::movePawn(int row, int col, int RowUpdated, int ColUpdated) {}
-//     int x = row;
-//     int y = col;
+bool Board::movePawn(int row, int col, int RowUpdated, int ColUpdated) {
+  int x = row;
+  int y = col;
 
-//     Piece piece = square[x][y].getPiece();
-//     Color color = square[x][y].getColor();
-//     Piece destinationPiece = square[RowUpdated][ColUpdated].getPiece();
-//     Color destinationColor = square[RowUpdated][ColUpdated].getColor();
+  Piece piece = square[x][y].getPiece();
+  Color color = square[x][y].getColor();
+  Piece destinationPiece = square[RowUpdated][ColUpdated].getPiece();
+  Color destinationColor = square[RowUpdated][ColUpdated].getColor();
 
-//     int temp = abs(RowUpdated - row); // Difference in rows
-//     int temp1 = abs(ColUpdated - col); // Difference in columns
+  int temp = abs(RowUpdated - row); // Difference in rows
+  int temp1 = abs(ColUpdated - col); // Difference in columns
 
-//     Serial.print("Moving from ("); Serial.print(x); Serial.print(", "); Serial.print(y); Serial.println(")");
-//     Serial.print("Trying to move to ("); Serial.print(RowUpdated); Serial.print(", "); Serial.print(ColUpdated); Serial.println(")");
-//     Serial.print("temp: "); Serial.println(temp);
-//     Serial.print("temp1: "); Serial.println(temp1);
-//     // Serial.print("Piece at destination: "); Serial.println(destinationPiece);
-//     // Serial.print("Destination color: "); Serial.println(destinationColor);
+  // Print current move details
+  Serial.print("Moving piece: ");
+  Serial.print(piece == PAWN ? "Pawn" : "Other");
+  Serial.print(" from ("); Serial.print(x); Serial.print(", "); Serial.print(y); Serial.println(")");
+  Serial.print("Trying to move to ("); Serial.print(RowUpdated); Serial.print(", "); Serial.print(ColUpdated); Serial.println(")");
+  Serial.print("Row difference (temp): "); Serial.println(temp);
+  Serial.print("Column difference (temp1): "); Serial.println(temp1);
 
-//     if (color == BLACK && piece == PAWN) {
-//         // Black Pawn first move, 2 squares forward
-//         if (x == 1 && temp == 2 && temp1 == 0) {
-//             if (destinationPiece == EMPTY) {
-//                 square[x][y].setupPiece(EMPTY, NONE);
-//                 square[RowUpdated][ColUpdated].setupPiece(PAWN, BLACK);
-//                 Serial.println("First move: 2 squares forward");
-//                 return true;
-//             }
-//         }
+  // Fetch last move details using GetLastMove()
+  int* lastMove = GetLastMove();
+  Serial.println("Last move details:");
+  Serial.print("Last move details - Piece: "); Serial.print(lastMove[0]);
+  Serial.print(", Color: "); Serial.print(lastMove[1]);
+  Serial.print(", From: ("); Serial.print(lastMove[2]); Serial.print(", "); Serial.print(lastMove[3]); Serial.print(")");
+  Serial.print(", To: ("); Serial.print(lastMove[4]); Serial.print(", "); Serial.print(lastMove[5]); Serial.println(")");
 
-//         // Black Pawn regular 1 square forward move
-//         if (temp == 1 && temp1 == 0) {
-//             if (destinationPiece == EMPTY) {
-//                 square[x][y].setupPiece(EMPTY, NONE);
-//                 square[RowUpdated][ColUpdated].setupPiece(PAWN, BLACK);
-//                 Serial.println("Move: 1 square forward");
-//                 return true;
-//             }
-//         }
+  // En passant logic for black and white pawns
+  if (piece == PAWN) {
+    // En passant for black pawn
+    if (color == BLACK && temp == 1 && temp1 == 1 && destinationPiece == EMPTY) {
+      if (lastMove[0] == PAWN && lastMove[1] == WHITE) { // Last move was a white pawn
+        if (lastMove[4] == lastMove[2] - 2) { // White pawn moved two squares next to black pawn
+          //if (lastMove[4] == RowUpdated && (lastMove[5] == ColUpdated - 1 || lastMove[5] == ColUpdated + 1)) { // En passant move behind white pawn
+          square[x][y].setupPiece(EMPTY, NONE); // Move black pawn
+          square[RowUpdated][ColUpdated].setupPiece(PAWN, BLACK);
+          square[lastMove[4]][lastMove[5]].setupPiece(EMPTY, NONE); // Capture white pawn and remove
+          Serial.println("En passant capture successful! Black pawn captures white pawn.");
 
-//         // Black Pawn diagonal capture
-//         if (temp == 1 && temp1 == 1) {
-//             if (destinationPiece != EMPTY) {
-//                 if (destinationColor == WHITE) {
-//                     square[x][y].setupPiece(EMPTY, NONE);
-//                     square[RowUpdated][ColUpdated].setupPiece(PAWN, BLACK);
-//                     Serial.println("Diagonal capture move");
-//                     return true;
-//                 } else {
-//                     Serial.println("Capture failed: Destination color is not opponent's.");
-//                 }
-//             } else {
-//                 Serial.println("Capture failed: Destination is empty.");
-//             }
-//         }
-//     } else if (color == WHITE && piece == PAWN) {
-//         // White Pawn first move, 2 squares forward
-//         if (x == 6 && temp == 2 && temp1 == 0) {
-//             if (destinationPiece == EMPTY) {
-//                 square[x][y].setupPiece(EMPTY, NONE);
-//                 square[RowUpdated][ColUpdated].setupPiece(PAWN, WHITE);
-//                 Serial.println("First move: 2 squares forward");
-//                 return true;
-//             }
-//         }
+          // Update LastMoveArray
+          LastMoveArray[0] = PAWN;
+          LastMoveArray[1] = BLACK;
+          LastMoveArray[2] = row;
+          LastMoveArray[3] = col;
+          LastMoveArray[4] = RowUpdated;
+          LastMoveArray[5] = ColUpdated;
+          return true;
+        }
+        //}
+      }
+    }
 
-//         // White Pawn regular 1 square forward move
-//         if (temp == 1 && temp1 == 0) {
-//             if (destinationPiece == EMPTY) {
-//                 square[x][y].setupPiece(EMPTY, NONE);
-//                 square[RowUpdated][ColUpdated].setupPiece(PAWN, WHITE);
-//                 Serial.println("Move: 1 square forward");
-//                 return true;
-//             }
-//         }
+    // En passant for white pawn
+    if (color == WHITE && temp == 1 && temp1 == 1 && destinationPiece == EMPTY) {
+      if (lastMove[0] == PAWN && lastMove[1] == BLACK) { // Last move was a black pawn
+        if (lastMove[4] == lastMove[2] + 2) { // Black pawn moved two squares next to white pawn
+          //if (lastMove[4] == RowUpdated && (lastMove[5] == ColUpdated - 1 || lastMove[5] == ColUpdated + 1)) {
+          square[x][y].setupPiece(EMPTY, NONE); // Move white pawn
+          square[RowUpdated][ColUpdated].setupPiece(PAWN, WHITE);
+          square[lastMove[4]][lastMove[5]].setupPiece(EMPTY, NONE); // Capture black pawn and remove
+          Serial.println("En passant capture successful! White pawn captures black pawn.");
 
-//         // White Pawn diagonal capture
-//         if (temp == 1 && temp1 == 1) {
-//             if (destinationPiece != EMPTY) {
-//                 if (destinationColor == BLACK) {
-//                     square[x][y].setupPiece(EMPTY, NONE);
-//                     square[RowUpdated][ColUpdated].setupPiece(PAWN, WHITE);
-//                     Serial.println("Diagonal capture move");
-//                     return true;
-//                 } else {
-//                     Serial.println("Capture failed: Destination color is not opponent's.");
-//                 }
-//             } else {
-//                 Serial.println("Capture failed: Destination is empty.");
-//             }
-//         }
-//     }
+          // Update LastMoveArray
+          LastMoveArray[0] = PAWN;
+          LastMoveArray[1] = WHITE;
+          LastMoveArray[2] = row;
+          LastMoveArray[3] = col;
+          LastMoveArray[4] = RowUpdated;
+          LastMoveArray[5] = ColUpdated;
+          return true;
+        }
+        //}
+      }
+    }
 
-//     Serial.println("Move is invalid");
-//     return false; // If no valid move was made
-// }
+    // Black Pawn first move, 2 squares forward
+    if (color == BLACK && x == 1 && temp == 2 && temp1 == 0 && destinationPiece == EMPTY) {
+      square[x][y].setupPiece(EMPTY, NONE);
+      square[RowUpdated][ColUpdated].setupPiece(PAWN, BLACK);
+      Serial.println("Black pawn first move: 2 squares forward.");
+
+      // Update LastMoveArray
+      LastMoveArray[0] = PAWN;
+      LastMoveArray[1] = BLACK;
+      LastMoveArray[2] = row;
+      LastMoveArray[3] = col;
+      LastMoveArray[4] = RowUpdated;
+      LastMoveArray[5] = ColUpdated;
+      return true;
+    }
+
+    // Black Pawn regular 1 square forward move
+    if (color == BLACK && temp == 1 && temp1 == 0 && destinationPiece == EMPTY) {
+      square[x][y].setupPiece(EMPTY, NONE);
+      square[RowUpdated][ColUpdated].setupPiece(PAWN, BLACK);
+      Serial.println("Black pawn moved 1 square forward.");
+
+      // Update LastMoveArray
+      LastMoveArray[0] = PAWN;
+      LastMoveArray[1] = BLACK;
+      LastMoveArray[2] = row;
+      LastMoveArray[3] = col;
+      LastMoveArray[4] = RowUpdated;
+      LastMoveArray[5] = ColUpdated;
+      return true;
+    }
+
+    // Black Pawn diagonal capture
+    if (color == BLACK && temp == 1 && temp1 == 1 && destinationPiece != EMPTY && destinationColor == WHITE) {
+      square[x][y].setupPiece(EMPTY, NONE);
+      square[RowUpdated][ColUpdated].setupPiece(PAWN, BLACK);
+      Serial.println("Black pawn captures white piece diagonally.");
+
+      // Update LastMoveArray
+      LastMoveArray[0] = PAWN;
+      LastMoveArray[1] = BLACK;
+      LastMoveArray[2] = row;
+      LastMoveArray[3] = col;
+      LastMoveArray[4] = RowUpdated;
+      LastMoveArray[5] = ColUpdated;
+      return true;
+    }
+
+    // White Pawn first move, 2 squares forward
+    if (color == WHITE && x == 6 && temp == 2 && temp1 == 0 && destinationPiece == EMPTY) {
+      square[x][y].setupPiece(EMPTY, NONE);
+      square[RowUpdated][ColUpdated].setupPiece(PAWN, WHITE);
+      Serial.println("White pawn first move: 2 squares forward.");
+
+      // Update LastMoveArray
+      LastMoveArray[0] = PAWN;
+      LastMoveArray[1] = WHITE;
+      LastMoveArray[2] = row;
+      LastMoveArray[3] = col;
+      LastMoveArray[4] = RowUpdated;
+      LastMoveArray[5] = ColUpdated;
+      return true;
+    }
+
+    // White Pawn regular 1 square forward move
+    if (color == WHITE && temp == 1 && temp1 == 0 && destinationPiece == EMPTY) {
+      square[x][y].setupPiece(EMPTY, NONE);
+      square[RowUpdated][ColUpdated].setupPiece(PAWN, WHITE);
+      Serial.println("White pawn moved 1 square forward.");
+
+      // Update LastMoveArray
+      LastMoveArray[0] = PAWN;
+      LastMoveArray[1] = WHITE;
+      LastMoveArray[2] = row;
+      LastMoveArray[3] = col;
+      LastMoveArray[4] = RowUpdated;
+      LastMoveArray[5] = ColUpdated;
+      return true;
+    }
+
+    // White Pawn diagonal capture
+    if (color == WHITE && temp == 1 && temp1 == 1 && destinationPiece != EMPTY && destinationColor == BLACK) {
+      square[x][y].setupPiece(EMPTY, NONE);
+      square[RowUpdated][ColUpdated].setupPiece(PAWN, WHITE);
+      Serial.println("White pawn captures black piece diagonally.");
+
+      // Update LastMoveArray
+      LastMoveArray[0] = PAWN;
+      LastMoveArray[1] = WHITE;
+      LastMoveArray[2] = row;
+      LastMoveArray[3] = col;
+      LastMoveArray[4] = RowUpdated;
+      LastMoveArray[5] = ColUpdated;
+      return true;
+    }
+  }
+
+  Serial.println("Move is invalid");
+  return false;
+}
 
 
 bool Board::moveRook(int row, int col, int RowUpdated, int ColUpdated) {
